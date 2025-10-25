@@ -1,0 +1,354 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
+
+namespace Pixel_Brawl4
+{
+    public class Game1 : Game
+    {
+        private GraphicsDeviceManager _graphics;
+        private SpriteBatch _spriteBatch;
+
+        private Texture2D titleTexture;
+        private Texture2D levelselectmario;
+        private Texture2D levelselectsonic;
+        private Texture2D levelselectpacman;
+        private Texture2D levelselectspaceinvader;
+        private Texture2D levelselect1_3;
+        private bool inmariolevelselect = false;
+        private bool insoniclevelselect = false;
+        private bool inpacmanlevelselect = false;
+        private bool inspaceinvaderlevelselect = false;
+        private bool startup = true;
+        private bool inlevelselect1_3 = false;
+
+        // Player
+        Texture2D playerTexture;
+        Vector2 playerPosition;
+        Vector2 playerVelocity;
+        Rectangle playerBounds;
+        bool isOnGround;
+
+        // Camera
+        Rectangle camera;
+
+        // Tilemap
+        Texture2D groundTile;
+        int tileSize = 32;
+        int[,] level1Tiles;
+
+        private bool inlevel1 = false;
+        List<Rectangle> platforms = new List<Rectangle>()
+        {
+         new Rectangle(0, 400, 800, 50),   // ground
+         new Rectangle(200, 300, 100, 20), // floating block
+         new Rectangle(400, 250, 150, 20)  // another block
+        };
+
+        // Buttons in ORIGINAL image pixels
+        private Rectangle startButtonArea = new Rectangle(584, 649, 416, 100);
+        private MouseState previousMouse;
+        private KeyboardState previousKeyboard;
+
+        public Game1()
+        {
+            _graphics = new GraphicsDeviceManager(this);
+            Content.RootDirectory = "Content";
+            IsMouseVisible = true;
+        }
+
+        protected override void LoadContent()
+        {
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            // Load images
+            titleTexture = Content.Load<Texture2D>("TitlePage");
+            levelselectmario = Content.Load<Texture2D>("levelselectmario");
+            levelselectsonic = Content.Load<Texture2D>("levelselectsonic");
+            levelselectpacman = Content.Load<Texture2D>("levelselectpacman");
+            levelselectspaceinvader = Content.Load<Texture2D>("levelselectspaceinvader");
+            levelselect1_3 = Content.Load<Texture2D>("levelselect1_3");
+
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            // Player
+            playerTexture = Content.Load<Texture2D>("PlayerSprite");
+
+            // Tiles
+            groundTile = Content.Load<Texture2D>("GroundTile");
+
+            // Example tilemap: 20x10 tiles
+            level1Tiles = new int[20, 10];
+
+            // Fill bottom row with ground
+            for (int x = 0; x < 20; x++)
+                level1Tiles[x, 9] = 1;  // 1 = ground tile
+
+            // Starting player position
+            playerPosition = new Vector2(50, 50);
+        }
+
+        protected override void Update(GameTime gameTime)
+        {
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+                Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
+
+            MouseState currentMouse = Mouse.GetState();
+            KeyboardState currentKeyboard = Keyboard.GetState();
+
+            // Mouse click logic
+            if (currentMouse.LeftButton == ButtonState.Pressed && previousMouse.LeftButton == ButtonState.Released)
+            {
+                if (startup)
+                {
+                    // Title page start button
+                    Rectangle scaledStartButton = ScaleRectangle(startButtonArea, titleTexture);
+                    if (scaledStartButton.Contains(currentMouse.Position))
+                    {
+                        startup = false;
+                        inmariolevelselect = true;
+                    }
+                }
+            }
+            if (inmariolevelselect && currentKeyboard.IsKeyDown(Keys.Enter) &&
+                    previousKeyboard.IsKeyUp(Keys.Enter))
+            {
+                    Console.WriteLine("Mario selected!");
+                    inlevelselect1_3 = true;
+                    inmariolevelselect = false;
+                    // TODO: start Mario gameplay
+             }
+          
+
+            // Keyboard input: right arrow to move to Sonic screen
+            else if (inmariolevelselect &&
+                currentKeyboard.IsKeyDown(Keys.Right) &&
+                previousKeyboard.IsKeyUp(Keys.Right))
+            {
+                inmariolevelselect = false;
+                insoniclevelselect = true;
+            }
+
+            else if (insoniclevelselect && currentKeyboard.IsKeyDown(Keys.Left) &&
+                previousKeyboard.IsKeyUp(Keys.Left))
+
+            {
+                inmariolevelselect = true;
+                insoniclevelselect = false;
+            }
+
+            else if (insoniclevelselect && currentKeyboard.IsKeyDown(Keys.Enter) &&
+                previousKeyboard.IsKeyUp(Keys.Enter))
+            {
+                Console.WriteLine("Sonic selected!");
+                inlevelselect1_3 = true;
+                insoniclevelselect = false;
+                // TODO: start Sonic gameplay
+            }
+
+            else if (insoniclevelselect && currentKeyboard.IsKeyDown(Keys.Right) &&
+                previousKeyboard.IsKeyUp(Keys.Right))
+            { insoniclevelselect = false;
+                inpacmanlevelselect = true; }
+
+            else if (inpacmanlevelselect &&
+                     currentKeyboard.IsKeyDown(Keys.Left) &&
+                     previousKeyboard.IsKeyUp(Keys.Left))
+            {
+                inpacmanlevelselect = false;
+                insoniclevelselect = true;
+            }
+
+            else if (inpacmanlevelselect && currentKeyboard.IsKeyDown(Keys.Enter) &&
+                previousKeyboard.IsKeyUp(Keys.Enter))
+            {
+                Console.WriteLine("Pacman selected!");
+                inlevelselect1_3 = true;
+                inpacmanlevelselect = false;
+                // TODO: start Pacman gameplay
+            }
+
+            else if (inpacmanlevelselect && currentKeyboard.IsKeyDown(Keys.Right) &&
+                previousKeyboard.IsKeyUp(Keys.Right))
+
+            {
+                inpacmanlevelselect = false;
+                inspaceinvaderlevelselect = true;
+            }
+
+            else if (inspaceinvaderlevelselect && currentKeyboard.IsKeyDown(Keys.Left) &&
+                previousKeyboard.IsKeyUp(Keys.Left))
+
+            {
+                inpacmanlevelselect = true;
+                inspaceinvaderlevelselect = false;
+            }
+
+            else if (inspaceinvaderlevelselect && currentKeyboard.IsKeyDown(Keys.Enter) &&
+                previousKeyboard.IsKeyUp(Keys.Enter))
+            {
+                Console.WriteLine("Space Invader selected!");
+                inlevelselect1_3 = true;
+                inspaceinvaderlevelselect = false;
+                // TODO: start Space Invader gameplay
+            }
+
+            else if (inlevelselect1_3 && currentKeyboard.IsKeyDown(Keys.D1) &&
+                previousKeyboard.IsKeyUp(Keys.D1))
+            {   inlevelselect1_3 = false;
+                inlevel1 = true;
+            }
+
+                previousMouse = currentMouse;
+            previousKeyboard = currentKeyboard;
+
+            if (inlevel1)
+            {
+                KeyboardState kb = Keyboard.GetState();
+
+                // Horizontal movement
+                if (kb.IsKeyDown(Keys.Left))
+                    playerVelocity.X = -3;
+                else if (kb.IsKeyDown(Keys.Right))
+                    playerVelocity.X = 3;
+                else
+                    playerVelocity.X = 0;
+
+                // Jump
+                if (kb.IsKeyDown(Keys.Space) && isOnGround)
+                {
+                    playerVelocity.Y = -10;
+                    isOnGround = false;
+                }
+
+                // Gravity
+                playerVelocity.Y += 0.5f;
+
+                // Update position
+                playerPosition += playerVelocity;
+
+                // Collision with platforms
+                isOnGround = false;
+                Rectangle playerRect = new Rectangle((int)playerPosition.X, (int)playerPosition.Y, playerTexture.Width, playerTexture.Height);
+
+                foreach (var platform in platforms)
+                {
+                    if (playerRect.Intersects(platform))
+                    {
+                        // Only handle top collisions for now
+                        if (playerVelocity.Y > 0 && playerPosition.Y + playerTexture.Height <= platform.Y + playerVelocity.Y)
+                        {
+                            playerPosition.Y = platform.Y - playerTexture.Height;
+                            playerVelocity.Y = 0;
+                            isOnGround = true;
+                        }
+                    }
+                }
+
+                // Camera follows player
+                camera = new Rectangle((int)playerPosition.X - 400, 0, 800, 600);
+                camera.X = MathHelper.Clamp(camera.X, 0, level1Tiles.GetLength(0) * tileSize - camera.Width);
+            }
+
+            base.Update(gameTime);
+        }
+
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(Color.Black);
+
+            _spriteBatch.Begin();
+
+            if (startup)
+            {
+                _spriteBatch.Draw(titleTexture,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    Color.White);
+            }
+            else if (inmariolevelselect)
+            {
+                _spriteBatch.Draw(levelselectmario,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    Color.White);
+            }
+            else if (insoniclevelselect)
+            {
+                _spriteBatch.Draw(levelselectsonic,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    Color.White);
+            }
+            else if (inpacmanlevelselect)
+            {
+                _spriteBatch.Draw(levelselectpacman,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    Color.White);
+            }
+
+            else if (inspaceinvaderlevelselect)
+            {
+                _spriteBatch.Draw(levelselectspaceinvader,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    Color.White);
+
+            }
+            else if (inlevelselect1_3)
+                _spriteBatch.Draw(levelselect1_3,
+                    new Rectangle(0, 0, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height),
+                    Color.White);
+
+            if (inlevel1)
+            {
+                // Draw tiles
+                for (int x = 0; x < level1Tiles.GetLength(0); x++)
+                {
+                    for (int y = 0; y < level1Tiles.GetLength(1); y++)
+                    {
+                        if (level1Tiles[x, y] == 1)
+                        {
+                            _spriteBatch.Draw(
+                                groundTile,
+                                new Vector2(x * tileSize - camera.X, y * tileSize - camera.Y),
+                                Color.White
+                            );
+                        }
+                    }
+                }
+
+                // Draw platforms
+                foreach (var platform in platforms)
+                {
+                    _spriteBatch.Draw(
+                        groundTile,
+                        new Rectangle(platform.X - camera.X, platform.Y - camera.Y, platform.Width, platform.Height),
+                        Color.White
+                    );
+                }
+
+                // Draw player
+                _spriteBatch.Draw(playerTexture, playerPosition - new Vector2(camera.X, camera.Y), Color.White);
+            }
+
+            _spriteBatch.End();
+            base.Draw(gameTime);
+        }
+
+        /// <summary>
+        /// Scale a rectangle from original image pixels to the current viewport size
+        /// </summary>
+        private Rectangle ScaleRectangle(Rectangle original, Texture2D texture)
+        {
+            float scaleX = (float)GraphicsDevice.Viewport.Width / texture.Width;
+            float scaleY = (float)GraphicsDevice.Viewport.Height / texture.Height;
+
+            return new Rectangle(
+                (int)(original.X * scaleX),
+                (int)(original.Y * scaleY),
+                (int)(original.Width * scaleX),
+                (int)(original.Height * scaleY)
+            );
+        }
+    }
+}
