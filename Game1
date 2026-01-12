@@ -11,44 +11,103 @@ namespace Pixel_Brawl4
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        private Texture2D titleTexture;
+        private Texture2D titleTexture; // Variable to store 
+
         private Texture2D levelselectmario;
+
         private Texture2D levelselectsonic;
         private Texture2D levelselectpacman;
         private Texture2D levelselectspaceinvader;
+
         private Texture2D levelselect1_3;
+
+        private Texture2D marioSprite;
+        private Texture2D sonicSprite;
+        private Texture2D pacmanSprite;
+        private Texture2D spaceInvaderSprite;
+
+        private Texture2D goombaSprite;
+
         private bool inmariolevelselect = false;
+
         private bool insoniclevelselect = false;
         private bool inpacmanlevelselect = false;
         private bool inspaceinvaderlevelselect = false;
-        private bool startup = true;
         private bool inlevelselect1_3 = false;
+        private bool startup = true;
+
+        Texture2D bulletTexture;
+        List<Bullet> bullets = new List<Bullet>();
+
+        Texture2D flagTexture;
+        Vector2 flagPosition;
+        Rectangle flagBounds;
+
+
+        List<Villain> villains = new List<Villain>();
 
         // Player
-        Texture2D playerTexture;
+        private Texture2D playerTexture;
+
         Vector2 playerPosition;
+
         Vector2 playerVelocity;
-        Rectangle playerBounds;
+
+        Vector2 previousPlayerPosition;
+
         bool isOnGround;
+
+        enum Character
+        {
+            None,
+            Mario,
+            Sonic,
+            Pacman,
+            SpaceInvader
+        }
+
+        Character selectedCharacter = Character.None;
+
+        private void ReturnToLevelSelect()
+        {
+            inlevel1 = false;
+            inlevelselect1_3 = true;
+
+            villains.Clear();
+            bullets.Clear();
+
+            // Reset player
+            playerVelocity = Vector2.Zero;
+            playerPosition = new Vector2(50, 50);
+            isOnGround = false;
+        }
+
+
+
+
+
 
         // Camera
         Rectangle camera;
 
         // Tilemap
         Texture2D groundTile;
+
         int tileSize = 32;
+
         int[,] level1Tiles;
 
         private bool inlevel1 = false;
+
         List<Rectangle> platforms = new List<Rectangle>()
         {
-         new Rectangle(0, 400, 800, 50),   // ground
-         new Rectangle(200, 300, 100, 20), // floating block
-         new Rectangle(400, 250, 150, 20)  // another block
+         new Rectangle(0, 400, 800, 50),   
+         new Rectangle(400, 250, 150, 20) 
         };
 
         // Buttons in ORIGINAL image pixels
         private Rectangle startButtonArea = new Rectangle(584, 649, 416, 100);
+
         private MouseState previousMouse;
         private KeyboardState previousKeyboard;
 
@@ -63,9 +122,10 @@ namespace Pixel_Brawl4
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // Load images
+            // Load image
             titleTexture = Content.Load<Texture2D>("TitlePage");
             levelselectmario = Content.Load<Texture2D>("levelselectmario");
+
             levelselectsonic = Content.Load<Texture2D>("levelselectsonic");
             levelselectpacman = Content.Load<Texture2D>("levelselectpacman");
             levelselectspaceinvader = Content.Load<Texture2D>("levelselectspaceinvader");
@@ -73,14 +133,26 @@ namespace Pixel_Brawl4
 
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // Player
-            playerTexture = Content.Load<Texture2D>("PlayerSprite");
+            // Characters
+            marioSprite = Content.Load<Texture2D>("mariosprite");
+            sonicSprite = Content.Load<Texture2D>("sonicsprite");
+            pacmanSprite = Content.Load<Texture2D>("pacmansprite");
+            spaceInvaderSprite = Content.Load<Texture2D>("spaceinvadersprite");
 
             // Tiles
             groundTile = Content.Load<Texture2D>("GroundTile");
 
-            // Example tilemap: 20x10 tiles
-            level1Tiles = new int[20, 10];
+            // Villains
+            goombaSprite = Content.Load<Texture2D>("goombaSprite");
+
+            // Bullet
+            bulletTexture = Content.Load<Texture2D>("bullet");
+
+            // Flag
+            flagTexture = Content.Load<Texture2D>("flag");
+
+
+            level1Tiles = new int[100, 20];
 
             // Fill bottom row with ground
             for (int x = 0; x < 20; x++)
@@ -116,12 +188,14 @@ namespace Pixel_Brawl4
             if (inmariolevelselect && currentKeyboard.IsKeyDown(Keys.Enter) &&
                     previousKeyboard.IsKeyUp(Keys.Enter))
             {
-                    Console.WriteLine("Mario selected!");
-                    inlevelselect1_3 = true;
-                    inmariolevelselect = false;
-                    // TODO: start Mario gameplay
-             }
-          
+                Console.WriteLine("Mario selected!");
+                inlevelselect1_3 = true;
+                inmariolevelselect = false;
+                selectedCharacter = Character.Mario;
+                playerTexture = marioSprite;
+                // then starts Mario gameplay
+            }
+
 
             // Keyboard input: right arrow to move to Sonic screen
             else if (inmariolevelselect &&
@@ -134,7 +208,6 @@ namespace Pixel_Brawl4
 
             else if (insoniclevelselect && currentKeyboard.IsKeyDown(Keys.Left) &&
                 previousKeyboard.IsKeyUp(Keys.Left))
-
             {
                 inmariolevelselect = true;
                 insoniclevelselect = false;
@@ -146,13 +219,17 @@ namespace Pixel_Brawl4
                 Console.WriteLine("Sonic selected!");
                 inlevelselect1_3 = true;
                 insoniclevelselect = false;
+                selectedCharacter = Character.Sonic;
+                playerTexture = sonicSprite;
                 // TODO: start Sonic gameplay
             }
 
             else if (insoniclevelselect && currentKeyboard.IsKeyDown(Keys.Right) &&
                 previousKeyboard.IsKeyUp(Keys.Right))
-            { insoniclevelselect = false;
-                inpacmanlevelselect = true; }
+            {
+                insoniclevelselect = false;
+                inpacmanlevelselect = true;
+            }
 
             else if (inpacmanlevelselect &&
                      currentKeyboard.IsKeyDown(Keys.Left) &&
@@ -168,6 +245,8 @@ namespace Pixel_Brawl4
                 Console.WriteLine("Pacman selected!");
                 inlevelselect1_3 = true;
                 inpacmanlevelselect = false;
+                selectedCharacter = Character.Pacman;
+                playerTexture = pacmanSprite;
                 // TODO: start Pacman gameplay
             }
 
@@ -193,20 +272,92 @@ namespace Pixel_Brawl4
                 Console.WriteLine("Space Invader selected!");
                 inlevelselect1_3 = true;
                 inspaceinvaderlevelselect = false;
+                selectedCharacter = Character.SpaceInvader;
+                playerTexture = spaceInvaderSprite;
                 // TODO: start Space Invader gameplay
             }
 
-            else if (inlevelselect1_3 && currentKeyboard.IsKeyDown(Keys.D1) &&
+
+
+            // LEVEL 1 START (pressing "1")
+            if (inlevelselect1_3 &&
+                selectedCharacter != Character.None &&
+                currentKeyboard.IsKeyDown(Keys.D1) &&
                 previousKeyboard.IsKeyUp(Keys.D1))
-            {   inlevelselect1_3 = false;
+            {
+                inlevelselect1_3 = false;
                 inlevel1 = true;
+
+                // Load Villain
+                int groundY = 400 - goombaSprite.Height;
+                villains.Add(new Villain(goombaSprite, new Vector2(400, groundY)));
+
+                // Ground Y
+                groundY = 400 - flagTexture.Height;
+
+                // Place flag at end of base platform
+                flagPosition = new Vector2(800 - flagTexture.Width - 10, groundY);
+
+                flagBounds = new Rectangle(
+                    (int)flagPosition.X,
+                    (int)flagPosition.Y,
+                    flagTexture.Width,
+                    flagTexture.Height
+                );
+
+
             }
 
-                previousMouse = currentMouse;
-            previousKeyboard = currentKeyboard;
 
             if (inlevel1)
             {
+                foreach (var v in villains)
+                    v.Update(gameTime);
+            }
+
+
+
+
+            if (inlevel1)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.Z) && previousKeyboard.IsKeyUp(Keys.Z))
+                {
+                    Vector2 bulletPosition = new Vector2(
+                        playerPosition.X + playerTexture.Width,
+                        playerPosition.Y + playerTexture.Height / 2
+                    );
+
+                    bullets.Add(new Bullet(
+                        bulletTexture,
+                        bulletPosition,
+                        new Vector2(8f, 0f) // speed to the right
+                    ));
+                }
+
+                for (int i = bullets.Count - 1; i >= 0; i--)
+                {
+                    bullets[i].Update();
+
+                    // Remove bullet if it goes too far
+                    if (bullets[i].Position.X > camera.X + 900)
+                        bullets.RemoveAt(i);
+                }
+
+                for (int i = bullets.Count - 1; i >= 0; i--)
+                {
+                    for (int j = villains.Count - 1; j >= 0; j--)
+                    {
+                        if (bullets[i].Bounds.Intersects(villains[j].Bounds))
+                        {
+                            bullets.RemoveAt(i);
+                            villains.RemoveAt(j);
+                            break;
+                        }
+                    }
+                }
+
+
+
                 KeyboardState kb = Keyboard.GetState();
 
                 // Horizontal movement
@@ -227,38 +378,85 @@ namespace Pixel_Brawl4
                 // Gravity
                 playerVelocity.Y += 0.5f;
 
+                previousPlayerPosition = playerPosition;
+
                 // Update position
                 playerPosition += playerVelocity;
 
                 // Collision with platforms
                 isOnGround = false;
-                Rectangle playerRect = new Rectangle((int)playerPosition.X, (int)playerPosition.Y, playerTexture.Width, playerTexture.Height);
+
+                Rectangle playerRect = new Rectangle(
+                    (int)playerPosition.X,
+                    (int)playerPosition.Y,
+                    playerTexture.Width,
+                    playerTexture.Height
+                );
+
+                if (playerRect.Intersects(flagBounds))
+                {
+                    ReturnToLevelSelect();
+                }
+
+
+                foreach (var v in villains)
+                {
+                    if (playerRect.Intersects(v.Bounds))
+                    {
+                        ReturnToLevelSelect();
+                        break;
+                    }
+                }
+
+
 
                 foreach (var platform in platforms)
                 {
                     if (playerRect.Intersects(platform))
                     {
-                        // Only handle top collisions for now
-                        if (playerVelocity.Y > 0 && playerPosition.Y + playerTexture.Height <= platform.Y + playerVelocity.Y)
+                        if (playerVelocity.Y > 0 &&
+                            (playerRect.Bottom - (int)playerVelocity.Y) <= platform.Top)
                         {
-                            playerPosition.Y = platform.Y - playerTexture.Height;
+                            playerPosition.Y = platform.Top - playerTexture.Height;
                             playerVelocity.Y = 0;
                             isOnGround = true;
+
+                            playerRect = new Rectangle(
+                                (int)playerPosition.X,
+                                (int)playerPosition.Y,
+                                playerTexture.Width,
+                                playerTexture.Height
+                            );
                         }
                     }
                 }
 
-                // Camera follows player
-                camera = new Rectangle((int)playerPosition.X - 400, 0, 800, 600);
-                camera.X = MathHelper.Clamp(camera.X, 0, level1Tiles.GetLength(0) * tileSize - camera.Width);
+                camera = new Rectangle(
+                    (int)playerPosition.X - 400, // follow player horizontally
+                     0,                           // LOCK Y
+                     800,
+                     600
+                );
+
+                // Clamp camera so it doesn't go outside the world
+                camera.X = MathHelper.Clamp(
+                    camera.X,
+                    0,
+                    level1Tiles.GetLength(0) * tileSize - camera.Width
+                );
+
+
             }
 
+            previousMouse = currentMouse;
+            previousKeyboard = currentKeyboard;
+            // base.Update should ALWAYS be outside inlevel1
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(Color.LightBlue);
 
             _spriteBatch.Begin();
 
@@ -327,8 +525,41 @@ namespace Pixel_Brawl4
                     );
                 }
 
+                foreach (var bullet in bullets)
+                {
+                    bullet.Draw(_spriteBatch, new Vector2(camera.X, camera.Y));
+                }
+
+
+                // Choose character sprite
+                Texture2D playerSprite = null;
+
+                if (selectedCharacter == Character.Mario)
+                    playerSprite = marioSprite;
+                else if (selectedCharacter == Character.Sonic)
+                    playerSprite = sonicSprite;
+                else if (selectedCharacter == Character.Pacman)
+                    playerSprite = pacmanSprite;
+                else if (selectedCharacter == Character.SpaceInvader)
+                    playerSprite = spaceInvaderSprite;
+
                 // Draw player
-                _spriteBatch.Draw(playerTexture, playerPosition - new Vector2(camera.X, camera.Y), Color.White);
+                _spriteBatch.Draw(
+                    playerSprite,
+                    playerPosition - new Vector2(camera.X, camera.Y),
+                    Color.White
+                );
+
+                if (inlevel1)
+                {
+                    foreach (var v in villains)
+                        v.Draw(_spriteBatch, new Vector2(camera.X, camera.Y));
+
+                    _spriteBatch.Draw(
+                        flagTexture, flagPosition - new Vector2(camera.X, camera.Y), Color.White);
+                }
+
+
             }
 
             _spriteBatch.End();
@@ -352,3 +583,4 @@ namespace Pixel_Brawl4
         }
     }
 }
+
