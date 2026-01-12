@@ -1,0 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace Pixel_Brawl4
+{
+    public class Bullet
+    {
+        public Vector2 Position;
+        public Vector2 Velocity;
+        Texture2D texture;
+
+        public Bullet(Texture2D texture, Vector2 position, Vector2 velocity)
+        {
+            this.texture = texture;
+            Position = position;
+            Velocity = velocity;
+        }
+
+        public Rectangle Bounds =>
+            new Rectangle((int)Position.X, (int)Position.Y, texture.Width, texture.Height);
+
+        public void Update()
+        {
+            Position += Velocity;
+        }
+
+        public void Draw(SpriteBatch spriteBatch, Vector2 camera)
+        {
+            spriteBatch.Draw(texture, Position - camera, Color.White);
+        }
+    }
+}
+
